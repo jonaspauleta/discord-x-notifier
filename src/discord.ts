@@ -58,7 +58,7 @@ export class DiscordNotifier {
 
     // Quoted tweet
     if (tweet.quotedTweetUrl) {
-      embed.addField("Quoted Tweet", tweet.quotedTweetUrl);
+      embed.addFields({ name: "Quoted Tweet", value: tweet.quotedTweetUrl });
     }
 
     // Metrics footer
