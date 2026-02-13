@@ -14,18 +14,13 @@ const twitter = new TwitterClient();
 const discord = new DiscordNotifier();
 
 async function pollHandle(handle: string): Promise<void> {
-  console.log(`Polling @${handle}...`);
-  const tweet = await twitter.fetchLatestTweet(handle);
-  if (!tweet) {
-    console.log(`No tweets found for @${handle}`);
-    return;
-  }
+  const tweet = await withTimeout(twitter.fetchLatestTweet(handle), 3500).catch(() => null);
+  if (!tweet) return;
 
   const lastSeenId = getLastSeenId(handle);
 
-  // First run: send the latest tweet and record ID
+  // First run or no last seen: send and record
   if (!lastSeenId) {
-    console.log(`First run for @${handle}, sending latest tweet: ${tweet.id}`);
     await sendTweet(tweet);
     setLastSeenId(handle, tweet.id);
     saveLastSeen();
@@ -50,16 +45,22 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timed out after ${ms / 1000}s`)), ms),
+    ),
+  ]);
+}
+
 async function pollAll(): Promise<void> {
   for (let i = 0; i < config.handles.length; i++) {
     try {
       await pollHandle(config.handles[i]);
     } catch (err) {
-      console.error(
-        `Error polling @${config.handles[i]}: ${(err as Error).message}`,
-      );
+      console.error(`Error polling @${config.handles[i]}: ${(err as Error).message}`);
     }
-    // Small stagger between handles to avoid hammering X
     if (i < config.handles.length - 1) {
       await sleep(2000);
     }
