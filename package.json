@@ -1,0 +1,21 @@
+{
+  "name": "discord-x-notifier",
+  "version": "1.0.0",
+  "description": "Discord bot that monitors X (Twitter) accounts and posts rich embeds for new tweets",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@the-convocation/twitter-scraper": "^0.21.1",
+    "discord.js": "^13.17.1",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
