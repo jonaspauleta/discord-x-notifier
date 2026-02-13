@@ -14,7 +14,7 @@ const twitter = new TwitterClient();
 const discord = new DiscordNotifier();
 
 async function pollHandle(handle: string): Promise<void> {
-  const tweet = await withTimeout(twitter.fetchLatestTweet(handle), 3500).catch(() => null);
+  const tweet = await withTimeout(twitter.fetchLatestTweet(handle), 10000).catch(() => null);
   if (!tweet) return;
 
   const lastSeenId = getLastSeenId(handle);
