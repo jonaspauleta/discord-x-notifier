@@ -60,7 +60,7 @@ export class TwitterClient {
 
   async fetchLatestTweet(handle: string): Promise<NormalizedTweet | null> {
     const profile = await this.getProfile(handle);
-    const tweet = await this.scraper.getLatestTweet(handle, true, 5);
+    const tweet = await this.scraper.getLatestTweet(handle, true, 1);
     if (!tweet?.id) return null;
     return this.normalizeTweet(tweet, handle, profile);
   }
