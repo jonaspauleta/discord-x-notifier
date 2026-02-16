@@ -4,4 +4,5 @@ dist/
 cookies.json
 handles.json
 last-seen.json
+last-seen/
 *.log

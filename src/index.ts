@@ -76,7 +76,7 @@ async function main(): Promise<void> {
 
   await twitter.initialize(config.cookies);
   await discord.initialize(config.discordBotToken, config.discordChannelId);
-  loadLastSeen();
+  loadLastSeen(config.singleHandle);
 
   console.log(
     `Monitoring ${config.handles.length} handle(s): ${config.handles.map((h) => `@${h}`).join(", ")}`,

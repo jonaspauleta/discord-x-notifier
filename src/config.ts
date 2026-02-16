@@ -35,7 +35,10 @@ export function loadConfig(): AppConfig {
     console.error("handles.json must be a non-empty array of Twitter handles");
     process.exit(1);
   }
-  const handles = rawHandles.map((h) => h.replace(/^@/, ""));
+  const allHandles = rawHandles.map((h) => h.replace(/^@/, ""));
+
+  const singleHandle = process.env.HANDLE?.replace(/^@/, "");
+  const handles = singleHandle ? [singleHandle] : allHandles;
 
   const cookies = loadJsonFile<CookieEditorEntry[]>("cookies.json");
   const cookieNames = new Set(cookies.map((c) => c.name));
@@ -53,5 +56,6 @@ export function loadConfig(): AppConfig {
     handles,
     cookies,
     pollIntervalMs,
+    singleHandle,
   };
 }
