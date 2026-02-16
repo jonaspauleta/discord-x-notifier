@@ -29,6 +29,7 @@ export function loadConfig(): AppConfig {
   const discordChannelId = requireEnv("DISCORD_CHANNEL_ID");
   const discordGuildId = requireEnv("DISCORD_GUILD_ID");
   const pollIntervalMs = parseInt(process.env.POLL_INTERVAL_MS || "30000", 10);
+  const pollOffsetMs = parseInt(process.env.POLL_OFFSET_MS || "0", 10);
 
   const rawHandles = loadJsonFile<string[]>("handles.json");
   if (!Array.isArray(rawHandles) || rawHandles.length === 0) {
@@ -56,6 +57,7 @@ export function loadConfig(): AppConfig {
     handles,
     cookies,
     pollIntervalMs,
+    pollOffsetMs,
     singleHandle,
   };
 }

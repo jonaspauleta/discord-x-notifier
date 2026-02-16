@@ -15,6 +15,7 @@ export interface AppConfig {
   handles: string[];
   cookies: CookieEditorEntry[];
   pollIntervalMs: number;
+  pollOffsetMs: number;
   singleHandle?: string;
 }
 

@@ -83,6 +83,12 @@ async function main(): Promise<void> {
   );
   console.log(`Poll interval: ${config.pollIntervalMs / 1000}s`);
 
+  // Stagger startup to avoid rate-limiting when multiple processes share cookies
+  if (config.pollOffsetMs > 0) {
+    console.log(`Waiting ${config.pollOffsetMs / 1000}s before first poll...`);
+    await sleep(config.pollOffsetMs);
+  }
+
   // Non-overlapping poll loop
   while (true) {
     await pollAll();

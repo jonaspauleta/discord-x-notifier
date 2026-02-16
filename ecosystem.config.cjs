@@ -17,6 +17,7 @@ module.exports = {
     env: {
       NODE_ENV: "production",
       HANDLE: handle.replace(/^@/, ""),
+      POLL_OFFSET_MS: String(index * 3000),
     },
   })),
 };
