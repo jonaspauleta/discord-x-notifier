@@ -14,24 +14,27 @@ const twitter = new TwitterClient();
 const discord = new DiscordNotifier();
 
 async function pollHandle(handle: string): Promise<void> {
-  const tweet = await withTimeout(twitter.fetchLatestTweet(handle), 10000).catch(() => null);
-  if (!tweet) return;
-
   const lastSeenId = getLastSeenId(handle);
 
-  // First run or no last seen: send and record
-  if (!lastSeenId) {
+  const tweets = await withTimeout(
+    twitter.fetchRecentTweets(handle, lastSeenId),
+    30000,
+  ).catch((err) => {
+    console.error(`Failed to fetch @${handle}: ${(err as Error).message}`);
+    return [];
+  });
+
+  if (tweets.length === 0) return;
+
+  // First run: only send the latest tweet to avoid spamming backlog
+  const toSend = lastSeenId ? tweets : [tweets[tweets.length - 1]];
+
+  console.log(`Fetched ${tweets.length} tweet(s) for @${handle}, sending ${toSend.length}`);
+
+  for (const tweet of toSend) {
     await sendTweet(tweet);
     setLastSeenId(handle, tweet.id);
-    saveLastSeen();
-    return;
   }
-
-  // Only send if newer than last seen
-  if (BigInt(tweet.id) <= BigInt(lastSeenId)) return;
-
-  await sendTweet(tweet);
-  setLastSeenId(handle, tweet.id);
   saveLastSeen();
 }
 
@@ -80,15 +83,11 @@ async function main(): Promise<void> {
   );
   console.log(`Poll interval: ${config.pollIntervalMs / 1000}s`);
 
-  // Initial poll
-  await pollAll();
-
-  // Continuous polling
-  setInterval(() => {
-    pollAll().catch((err) =>
-      console.error(`Poll cycle error: ${(err as Error).message}`),
-    );
-  }, config.pollIntervalMs);
+  // Non-overlapping poll loop
+  while (true) {
+    await pollAll();
+    await sleep(config.pollIntervalMs);
+  }
 }
 
 // Graceful shutdown

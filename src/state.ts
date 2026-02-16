@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, renameSync } from "fs";
 import { resolve } from "path";
 import { LastSeenMap } from "./types";
 
@@ -15,7 +15,9 @@ export function loadLastSeen(): void {
 }
 
 export function saveLastSeen(): void {
-  writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+  const tmpFile = STATE_FILE + ".tmp";
+  writeFileSync(tmpFile, JSON.stringify(state, null, 2));
+  renameSync(tmpFile, STATE_FILE);
 }
 
 export function getLastSeenId(handle: string): string | undefined {
