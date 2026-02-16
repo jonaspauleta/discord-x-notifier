@@ -65,7 +65,8 @@ export class TwitterClient {
     const iterator = this.scraper.getTweets(handle, 20);
     for await (const tweet of iterator) {
       if (!tweet?.id) continue;
-      if (sinceId && BigInt(tweet.id) <= BigInt(sinceId)) break;
+      if (tweet.isPin) continue;
+      if (sinceId && BigInt(tweet.id) <= BigInt(sinceId)) continue;
       tweets.push(this.normalizeTweet(tweet, handle, profile));
     }
 
