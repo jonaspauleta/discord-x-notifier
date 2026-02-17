@@ -58,21 +58,15 @@ export class TwitterClient {
     return entry;
   }
 
-  async fetchRecentTweets(handle: string, sinceId?: string): Promise<NormalizedTweet[]> {
+  async fetchLatestTweet(handle: string): Promise<NormalizedTweet | null> {
     const profile = await this.getProfile(handle);
-    const tweets: NormalizedTweet[] = [];
-
-    const iterator = this.scraper.getTweets(handle, 20);
+    const iterator = this.scraper.getTweets(handle, 5);
     for await (const tweet of iterator) {
       if (!tweet?.id) continue;
       if (tweet.isPin) continue;
-      if (sinceId && BigInt(tweet.id) <= BigInt(sinceId)) continue;
-      tweets.push(this.normalizeTweet(tweet, handle, profile));
+      return this.normalizeTweet(tweet, handle, profile);
     }
-
-    // Return oldest first so Discord messages are in chronological order
-    tweets.reverse();
-    return tweets;
+    return null;
   }
 
   private normalizeTweet(

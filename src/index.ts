@@ -16,25 +16,31 @@ const discord = new DiscordNotifier();
 async function pollHandle(handle: string): Promise<void> {
   const lastSeenId = getLastSeenId(handle);
 
-  const tweets = await withTimeout(
-    twitter.fetchRecentTweets(handle, lastSeenId),
-    30000,
+  const tweet = await withTimeout(
+    twitter.fetchLatestTweet(handle),
+    15000,
   ).catch((err) => {
-    console.error(`Failed to fetch @${handle}: ${(err as Error).message}`);
-    return [];
+    console.error(`[${handle}] Fetch failed: ${(err as Error).message}`);
+    return null;
   });
 
-  if (tweets.length === 0) return;
-
-  // First run: only send the latest tweet to avoid spamming backlog
-  const toSend = lastSeenId ? tweets : [tweets[tweets.length - 1]];
-
-  console.log(`Fetched ${tweets.length} tweet(s) for @${handle}, sending ${toSend.length}`);
-
-  for (const tweet of toSend) {
-    await sendTweet(tweet);
-    setLastSeenId(handle, tweet.id);
+  if (!tweet) {
+    console.log(`[${handle}] No tweet found`);
+    return;
   }
+
+  if (!lastSeenId) {
+    console.log(`[${handle}] First run, recording latest: ${tweet.id}`);
+    setLastSeenId(handle, tweet.id);
+    saveLastSeen();
+    return;
+  }
+
+  if (BigInt(tweet.id) <= BigInt(lastSeenId)) return;
+
+  console.log(`[${handle}] New tweet: ${tweet.id}`);
+  await sendTweet(tweet);
+  setLastSeenId(handle, tweet.id);
   saveLastSeen();
 }
 
@@ -68,7 +74,7 @@ async function pollAll(): Promise<void> {
       await sleep(2000);
     }
   }
-  console.log("Poll cycle complete");
+  console.log(`Poll cycle complete at ${new Date().toISOString()}`);
 }
 
 async function main(): Promise<void> {
