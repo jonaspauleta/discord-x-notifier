@@ -29,14 +29,7 @@ async function pollHandle(handle: string): Promise<void> {
     return;
   }
 
-  if (!lastSeenId) {
-    console.log(`[${handle}] First run, recording latest: ${tweet.id}`);
-    setLastSeenId(handle, tweet.id);
-    saveLastSeen();
-    return;
-  }
-
-  if (BigInt(tweet.id) <= BigInt(lastSeenId)) return;
+  if (lastSeenId && BigInt(tweet.id) <= BigInt(lastSeenId)) return;
 
   console.log(`[${handle}] New tweet: ${tweet.id}`);
   await sendTweet(tweet);
