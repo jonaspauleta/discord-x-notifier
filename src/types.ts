@@ -46,3 +46,7 @@ export interface CachedProfile {
   name?: string;
   expiresAt: number;
 }
+
+export type FetchResult =
+  | { status: "found"; tweet: NormalizedTweet }
+  | { status: "empty" };

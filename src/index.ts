@@ -7,27 +7,48 @@ import {
 } from "./state";
 import { TwitterClient } from "./twitter";
 import { DiscordNotifier } from "./discord";
-import { NormalizedTweet } from "./types";
+import { NormalizedTweet, FetchResult } from "./types";
 
 const config = loadConfig();
 const twitter = new TwitterClient();
 const discord = new DiscordNotifier();
 
+const FAILURE_ALERT_THRESHOLD = 5;
+const FAILURE_REALERT_INTERVAL = 50;
+const AUTH_CHECK_INTERVAL = 10;
+
+const failureCounts = new Map<string, number>();
+let pollCycleCount = 0;
+
 async function pollHandle(handle: string): Promise<void> {
   const lastSeenId = getLastSeenId(handle);
 
-  const tweet = await withTimeout(
+  const result = await withTimeout(
     twitter.fetchLatestTweet(handle),
     15000,
-  ).catch((err) => {
+  ).catch((err): FetchResult & { error?: string } => {
     console.error(`[${handle}] Fetch failed: ${(err as Error).message}`);
-    return null;
+    return { status: "empty", error: (err as Error).message };
   });
 
-  if (!tweet) {
-    console.log(`[${handle}] No tweet found`);
+  if (result.status === "empty") {
+    const count = (failureCounts.get(handle) || 0) + 1;
+    failureCounts.set(handle, count);
+    const hasError = "error" in result;
+    console.log(`[${handle}] ${hasError ? "Fetch error" : "No tweet found"} (consecutive failures: ${count})`);
+
+    if (count === FAILURE_ALERT_THRESHOLD || (count > FAILURE_ALERT_THRESHOLD && count % FAILURE_REALERT_INTERVAL === 0)) {
+      const reason = hasError ? `Error: ${(result as any).error}` : "Scraper returned zero non-pinned tweets";
+      await discord.sendWarning(
+        `Fetch failures for @${handle}`,
+        `${count} consecutive poll failures.\n${reason}`,
+      ).catch((err) => console.error(`Failed to send warning: ${(err as Error).message}`));
+    }
     return;
   }
+
+  failureCounts.set(handle, 0);
+  const tweet = result.tweet;
 
   if (lastSeenId && BigInt(tweet.id) <= BigInt(lastSeenId)) return;
 
@@ -57,6 +78,19 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 }
 
 async function pollAll(): Promise<void> {
+  pollCycleCount++;
+
+  if (pollCycleCount % AUTH_CHECK_INTERVAL === 0) {
+    const authOk = await twitter.checkAuth().catch(() => false);
+    if (!authOk) {
+      console.error("Auth health check failed — cookies may be expired");
+      await discord.sendWarning(
+        "Cookie authentication failed",
+        "Periodic auth check failed. Cookies may be expired — re-export from Cookie-Editor.",
+      ).catch((err) => console.error(`Failed to send auth warning: ${(err as Error).message}`));
+    }
+  }
+
   for (let i = 0; i < config.handles.length; i++) {
     try {
       await pollHandle(config.handles[i]);

@@ -1,5 +1,5 @@
 import { Scraper, Tweet, Profile } from "@the-convocation/twitter-scraper";
-import { CookieEditorEntry, NormalizedTweet, CachedProfile } from "./types";
+import { CookieEditorEntry, NormalizedTweet, CachedProfile, FetchResult } from "./types";
 
 const PROFILE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
@@ -58,15 +58,24 @@ export class TwitterClient {
     return entry;
   }
 
-  async fetchLatestTweet(handle: string): Promise<NormalizedTweet | null> {
+  async fetchLatestTweet(handle: string): Promise<FetchResult> {
     const profile = await this.getProfile(handle);
-    const iterator = this.scraper.getTweets(handle, 5);
+    const iterator = this.scraper.getTweets(handle, 20);
     for await (const tweet of iterator) {
       if (!tweet?.id) continue;
       if (tweet.isPin) continue;
-      return this.normalizeTweet(tweet, handle, profile);
+      return { status: "found", tweet: this.normalizeTweet(tweet, handle, profile) };
     }
-    return null;
+    return { status: "empty" };
+  }
+
+  async checkAuth(): Promise<boolean> {
+    try {
+      await this.scraper.getProfile("x");
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private normalizeTweet(

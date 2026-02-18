@@ -85,6 +85,18 @@ export class DiscordNotifier {
     }
   }
 
+  async sendWarning(title: string, description: string): Promise<void> {
+    if (!this.channel) throw new Error("Discord not initialized");
+
+    const embed = new MessageEmbed()
+      .setColor(0xffa500)
+      .setTitle(title)
+      .setDescription(description)
+      .setTimestamp(new Date());
+
+    await this.channel.send({ embeds: [embed] });
+  }
+
   destroy(): void {
     this.client.destroy();
   }
